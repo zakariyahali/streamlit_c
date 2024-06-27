@@ -39,7 +39,7 @@ def process_image(image_path: str, form_schema: dict, output_dir: str):
                     ]
                 }
             ],
-            max_tokens=800,
+            max_tokens=2000,
         )
 
         if response and response.choices and response.choices[0].message.content:
