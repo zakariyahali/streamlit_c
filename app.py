@@ -73,7 +73,8 @@ def clean_and_save_csv_files(json_dir, csv_dir):
     df = pd.DataFrame(questions, columns=["Question"])
 
     # Read each JSON file and append answers to DataFrame
-    for filename in os.listdir(json_dir):
+    json_files = sorted(os.listdir(json_dir))
+    for idx, filename in enumerate(json_files):
         if filename.lower().endswith('.json'):
             file_path = os.path.join(json_dir, filename)
             try:
@@ -90,7 +91,10 @@ def clean_and_save_csv_files(json_dir, csv_dir):
                     answer = extract_answer(data, question)
                     answers.append(answer)
 
-                df[os.path.splitext(filename)[0]] = answers
+                if idx % 2 == 0:
+                    df[f"Form_{idx//2+1}_Page_1"] = answers
+                else:
+                    df[f"Form_{idx//2+1}_Page_2"] = answers
 
             except json.JSONDecodeError as e:
                 st.error(f"Error decoding JSON for {file_path}: {e}")
