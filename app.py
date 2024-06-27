@@ -19,7 +19,6 @@ if not api_key:
     st.stop()
 
 client = OpenAI()
-
 def convert_pdf_to_images(pdf_path, image_dir):
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
@@ -65,6 +64,8 @@ def clean_and_save_csv_files(json_dir, csv_dir):
                     st.success(f"Converted and cleaned {file_path} to {os.path.join(csv_dir, cleaned_csv_filename)}")
                 else:
                     st.error(f"Unexpected format in file {file_path}, skipping.")
+            except json.JSONDecodeError as e:
+                st.error(f"Error decoding JSON for {file_path}: {e}")
             except ValueError as e:
                 st.error(f"Error processing file {file_path}: {e}")
 
@@ -105,5 +106,3 @@ if pdf_file is not None:
             if filename.lower().endswith('.csv'):
                 st.write(f"Generated CSV file: {filename}")
                 st.dataframe(pd.read_csv(os.path.join(csv_dir, filename)))
-
-# Ensure that 'services' module and 'form_schema.json' file are available in the directory
