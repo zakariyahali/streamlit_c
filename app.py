@@ -11,7 +11,8 @@ import io
 from pdf2image import convert_from_path
 import os
 
-api_key = st.secrets["openai_api_key"]
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+api_key = openai.api_key
 OpenAI.api_key = api_key
 if not api_key:
     st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
