@@ -13,7 +13,7 @@ import os
 
 # Load environment variables from .env file
 load_dotenv()
-OpenAI.api_key = os.getenv('OPENAI_API_KEY')
+OpenAI.api_key = st.secrets["openai_api_key"]
 client = OpenAI()
 
 
@@ -125,11 +125,11 @@ def combine_json_files(input_dir, output_file):
 
 
 #------> Streamlit UI
-st.title("PDF to CSV Processor")
+st.title("PDF and Image GEN-AI Processor")
 
 # Step 1: File upload
 uploaded_pdf = st.file_uploader("Choose a PDF file", type="pdf")
-poppler_path = st.text_input("Enter the Poppler path", "C:\\poppler-24.02.0\\Library\\bin")
+#poppler_path = st.text_input("Enter the Poppler path", "C:\\poppler-24.02.0\\Library\\bin")
 
 if uploaded_pdf is not None:
     # Use Streamlit's temporary directory
