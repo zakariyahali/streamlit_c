@@ -6,15 +6,19 @@ import base64
 import tempfile
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 import io
 from pdf2image import convert_from_path
 import os
 
-# Load environment variables from .env file
-load_dotenv()
-OpenAI.api_key = st.secrets["openai_api_key"]
+api_key = st.secrets["openai_api_key"]
+OpenAI.api_key = api_key
+if not api_key:
+    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+    st.stop()
+
 client = OpenAI()
+
 
 
 
