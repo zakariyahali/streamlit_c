@@ -8,10 +8,10 @@ from pdf2image import convert_from_path
 import openai
 from openai import OpenAI, OpenAIError
 import io
+import fitz
 from services import pdf_to_image, process_images, convert_tocsv
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-convertapi_secret = st.secrets["CONVERTAPI_SECRET"]
 api_key = openai.api_key
 OpenAI.api_key = api_key
 if not api_key:
@@ -19,41 +19,18 @@ if not api_key:
     st.stop()
 
 client = OpenAI()
-
-# Access the OpenAI API key from Streamlit secrets
-openai.api_key = st.secrets["OPENAI_API_KEY"]
-
-def convert_pdf_to_images(pdf_path, image_dir, convertapi_secret):
-    url = f"https://v2.convertapi.com/convert/pdf/to/jpg?Secret={convertapi_secret}"
-    with open(pdf_path, "rb") as pdf_file:
-        pdf_base64 = base64.b64encode(pdf_file.read()).decode('utf-8')
-
-    payload = {
-        "Parameters": [
-            {
-                "Name": "File",
-                "FileValue": {
-                    "Name": os.path.basename(pdf_path),
-                    "Data": pdf_base64
-                }
-            }
-        ]
-    }
-    response = requests.post(url, json=payload)
-    result = response.json()
+def convert_pdf_to_images(pdf_path, image_dir):
+    if not os.path.exists(image_dir):
+        os.makedirs(image_dir)
     
-    if response.status_code == 200 and 'Files' in result:
-        for file_info in result['Files']:
-            image_url = file_info['Url']
-            image_name = file_info['FileName']
-            image_path = os.path.join(image_dir, image_name)
-            image_data = requests.get(image_url).content
-            with open(image_path, 'wb') as image_file:
-                image_file.write(image_data)
-        st.success("PDF converted to images.")
-    else:
-        st.error("Failed to convert PDF to images.")
-        st.error(response.text)
+    pdf_document = fitz.open(pdf_path)
+    for page_num in range(len(pdf_document)):
+        page = pdf_document.load_page(page_num)
+        pix = page.get_pixmap()
+        image_path = os.path.join(image_dir, f"page{page_num + 1}.png")
+        pix.save(image_path)
+    
+    st.success("PDF converted to images.")
 
 def process_files(image_dir, json_dir, csv_dir):
     schema_file = 'form_schema.json'  # Ensure form_schema.json is available in the directory
@@ -103,7 +80,7 @@ if pdf_file is not None:
 
     if st.button("Start Processing"):
         with st.spinner("Converting PDF to images..."):
-            convert_pdf_to_images(pdf_path, image_dir, convertapi_secret)
+            convert_pdf_to_images(pdf_path, image_dir)
 
         with st.spinner("Processing images..."):
             process_files(image_dir, json_dir, csv_dir)
