@@ -66,20 +66,20 @@ def clean_and_save_csv_files(json_dir, csv_dir):
     with open(schema_file, 'r') as file:
         schema = json.load(file)
 
-    # Extract all questions from the schema
-    questions = [prop for prop in schema['properties']]
+    # Extract all questions and descriptions from the schema
+    questions = [(prop, details.get("description", prop)) for prop, details in schema['properties'].items()]
 
     # Split questions into two sets for two pages
     half_length = len(questions) // 2
     questions_page1 = questions[:half_length]
     questions_page2 = questions[half_length:]
 
-    # Initialize DataFrame with questions
-    df = pd.DataFrame({"Question": questions})
+    # Initialize DataFrame with questions and descriptions
+    df = pd.DataFrame(questions, columns=["Key", "Question"])
 
     json_files = sorted(os.listdir(json_dir))
     form_data = {}
-    
+
     # Read each JSON file and combine pages to form complete forms
     for idx in range(0, len(json_files), 2):
         form_number = idx // 2 + 1
@@ -103,9 +103,9 @@ def clean_and_save_csv_files(json_dir, csv_dir):
         form_data[f"Form_{form_number}"] = form_answers
 
     # Create a DataFrame from form_data
-    form_df = pd.DataFrame(form_data, index=questions).reset_index()
+    form_df = pd.DataFrame(form_data, index=[q[1] for q in questions]).reset_index()
     form_df.columns = ["Question"] + list(form_df.columns[1:])
-    
+
     # Save the cleaned DataFrame to a new CSV file
     cleaned_csv_filename = 'metadata_cleaned.csv'
     form_df.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
@@ -122,8 +122,8 @@ def extract_answers_from_page(file_path, questions):
             return answers
 
         # Extract answers for each question
-        for question in questions:
-            answer = extract_answer(data, question)
+        for question_key, _ in questions:
+            answer = extract_answer(data, question_key)
             answers.append(answer)
 
     except json.JSONDecodeError as e:
