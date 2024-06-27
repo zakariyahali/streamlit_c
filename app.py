@@ -72,38 +72,45 @@ def clean_and_save_csv_files(json_dir, csv_dir):
     # Initialize DataFrame with questions
     df = pd.DataFrame(questions, columns=["Question"])
 
-    # Read each JSON file and append answers to DataFrame
     json_files = sorted(os.listdir(json_dir))
-    for idx, filename in enumerate(json_files):
-        if filename.lower().endswith('.json'):
-            file_path = os.path.join(json_dir, filename)
-            try:
-                with open(file_path, 'r') as file:
-                    data = json.load(file)
-                
-                if not isinstance(data, dict):
-                    st.error(f"Unexpected format in file {file_path}, skipping.")
-                    continue
+    form_data = {}
+    
+    # Read each JSON file and combine pages to form complete forms
+    for idx in range(0, len(json_files), 2):
+        form_number = idx // 2 + 1
+        form_answers = []
 
-                # Extract answers for each question
-                answers = []
-                for question in questions:
-                    answer = extract_answer(data, question)
-                    answers.append(answer)
+        for page_offset in range(2):
+            if idx + page_offset < len(json_files):
+                filename = json_files[idx + page_offset]
+                file_path = os.path.join(json_dir, filename)
+                try:
+                    with open(file_path, 'r') as file:
+                        data = json.load(file)
 
-                if idx % 2 == 0:
-                    df[f"Form_{idx//2+1}_Page_1"] = answers
-                else:
-                    df[f"Form_{idx//2+1}_Page_2"] = answers
+                    if not isinstance(data, dict):
+                        st.error(f"Unexpected format in file {file_path}, skipping.")
+                        continue
 
-            except json.JSONDecodeError as e:
-                st.error(f"Error decoding JSON for {file_path}: {e}")
-            except ValueError as e:
-                st.error(f"Error processing file {file_path}: {e}")
+                    # Extract answers for each question
+                    for question in questions:
+                        answer = extract_answer(data, question)
+                        form_answers.append(answer)
 
+                except json.JSONDecodeError as e:
+                    st.error(f"Error decoding JSON for {file_path}: {e}")
+                except ValueError as e:
+                    st.error(f"Error processing file {file_path}: {e}")
+
+        form_data[f"Form_{form_number}"] = form_answers
+
+    # Create a DataFrame from form_data
+    form_df = pd.DataFrame(form_data, index=questions).reset_index()
+    form_df.columns = ["Question"] + list(form_df.columns[1:])
+    
     # Save the cleaned DataFrame to a new CSV file
     cleaned_csv_filename = 'metadata_cleaned.csv'
-    df.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
+    form_df.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
     st.success(f"Cleaned CSV data saved to {os.path.join(csv_dir, cleaned_csv_filename)}")
 
 def extract_answer(data, question):
