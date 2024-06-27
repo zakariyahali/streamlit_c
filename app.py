@@ -19,6 +19,8 @@ if not api_key:
     st.stop()
 
 client = OpenAI()
+
+
 def convert_pdf_to_images(pdf_path, image_dir):
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
@@ -47,12 +49,18 @@ def clean_and_save_csv_files(json_dir, csv_dir):
     for filename in os.listdir(json_dir):
         if filename.lower().endswith('.json'):
             file_path = os.path.join(json_dir, filename)
-            df = pd.read_json(file_path)
-            df_transposed = df.T.reset_index()
-            df_transposed.columns = ['Question', 'Answer']
-            cleaned_csv_filename = os.path.splitext(filename)[0] + '_cleaned.csv'
-            df_transposed.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
-            st.success(f"Converted and cleaned {file_path} to {os.path.join(csv_dir, cleaned_csv_filename)}")
+            try:
+                df = pd.read_json(file_path)
+                df_transposed = df.T.reset_index()
+                if df_transposed.shape[1] == 2:
+                    df_transposed.columns = ['Question', 'Answer']
+                    cleaned_csv_filename = os.path.splitext(filename)[0] + '_cleaned.csv'
+                    df_transposed.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
+                    st.success(f"Converted and cleaned {file_path} to {os.path.join(csv_dir, cleaned_csv_filename)}")
+                else:
+                    st.error(f"Unexpected format in file {file_path}, skipping.")
+            except ValueError as e:
+                st.error(f"Error processing file {file_path}: {e}")
 
 # Streamlit app
 st.title("PDF to CSV Converter")
