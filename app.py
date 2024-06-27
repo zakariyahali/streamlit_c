@@ -69,6 +69,11 @@ def clean_and_save_csv_files(json_dir, csv_dir):
     # Extract all questions from the schema
     questions = [prop for prop in schema['properties']]
 
+    # Split questions into two sets for two pages
+    half_length = len(questions) // 2
+    questions_page1 = questions[:half_length]
+    questions_page2 = questions[half_length:]
+
     # Initialize DataFrame with questions
     df = pd.DataFrame({"Question": questions})
 
@@ -80,27 +85,15 @@ def clean_and_save_csv_files(json_dir, csv_dir):
         form_number = idx // 2 + 1
         form_answers = []
 
-        for page_offset in range(2):
-            if idx + page_offset < len(json_files):
-                filename = json_files[idx + page_offset]
-                file_path = os.path.join(json_dir, filename)
-                try:
-                    with open(file_path, 'r') as file:
-                        data = json.load(file)
+        # Extract answers from the first page
+        if idx < len(json_files):
+            file_path = os.path.join(json_dir, json_files[idx])
+            form_answers += extract_answers_from_page(file_path, questions_page1)
 
-                    if not isinstance(data, dict):
-                        st.error(f"Unexpected format in file {file_path}, skipping.")
-                        continue
-
-                    # Extract answers for each question
-                    for question in questions:
-                        answer = extract_answer(data, question)
-                        form_answers.append(answer)
-
-                except json.JSONDecodeError as e:
-                    st.error(f"Error decoding JSON for {file_path}: {e}")
-                except ValueError as e:
-                    st.error(f"Error processing file {file_path}: {e}")
+        # Extract answers from the second page
+        if idx + 1 < len(json_files):
+            file_path = os.path.join(json_dir, json_files[idx + 1])
+            form_answers += extract_answers_from_page(file_path, questions_page2)
 
         # Ensure the form_answers list has the same length as questions
         if len(form_answers) != len(questions):
@@ -117,6 +110,28 @@ def clean_and_save_csv_files(json_dir, csv_dir):
     cleaned_csv_filename = 'metadata_cleaned.csv'
     form_df.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
     st.success(f"Cleaned CSV data saved to {os.path.join(csv_dir, cleaned_csv_filename)}")
+
+def extract_answers_from_page(file_path, questions):
+    answers = []
+    try:
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+
+        if not isinstance(data, dict):
+            st.error(f"Unexpected format in file {file_path}, skipping.")
+            return answers
+
+        # Extract answers for each question
+        for question in questions:
+            answer = extract_answer(data, question)
+            answers.append(answer)
+
+    except json.JSONDecodeError as e:
+        st.error(f"Error decoding JSON for {file_path}: {e}")
+    except ValueError as e:
+        st.error(f"Error processing file {file_path}: {e}")
+
+    return answers
 
 def extract_answer(data, question):
     keys = question.split('.')
@@ -163,8 +178,13 @@ if pdf_file is not None:
             process_files(image_dir, json_dir, csv_dir)
 
         st.success("All processing complete!")
-        
+
+        cleaned_csv_path = os.path.join(csv_dir, 'metadata_cleaned.csv')
+        if os.path.exists(cleaned_csv_path):
+            st.write("Cleaned Metadata CSV")
+            st.dataframe(pd.read_csv(cleaned_csv_path))
+
         for filename in os.listdir(csv_dir):
-            if filename.lower().endswith('.csv'):
+            if filename.lower().endswith('.csv') and filename != 'metadata_cleaned.csv':
                 st.write(f"Generated CSV file: {filename}")
                 st.dataframe(pd.read_csv(os.path.join(csv_dir, filename)))
