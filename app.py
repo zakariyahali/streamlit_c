@@ -116,7 +116,7 @@ def extract_answer(data, question):
     return answer
 
 # Streamlit app
-st.title("PDF to CSV Converter")
+st.title("Gen-AI: PDF & Image to CSV Converter")
 st.write("Upload a PDF file and choose the directories for the output files.")
 
 pdf_file = st.file_uploader("Choose a PDF file", type="pdf")
