@@ -6,6 +6,7 @@ import base64
 import tempfile
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
+import openai
 from openai import OpenAI, OpenAIError
 import io
 from pdf2image import convert_from_path
