@@ -19,6 +19,7 @@ if not api_key:
     st.stop()
 
 client = OpenAI()
+
 def convert_pdf_to_images(pdf_path, image_dir):
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
@@ -37,13 +38,41 @@ def process_files(image_dir, json_dir, csv_dir):
     process_images.process_images_in_directory(image_dir, schema_file, json_dir)
     st.success("Images processed to JSON.")
 
-    convert_tocsv.convert_to_csv(os.path.join(json_dir, 'metadata.json'), os.path.join(csv_dir, 'metadata.csv'))
-    st.success("JSON data combined and converted to CSV.")
+    combine_json_files(json_dir)
+    st.success("JSON data combined.")
 
     clean_and_save_csv_files(json_dir, csv_dir)
     st.success("CSV files cleaned and saved.")
 
+def combine_json_files(json_dir):
+    combined_data = {}
+
+    for filename in os.listdir(json_dir):
+        if filename.lower().endswith('.json'):
+            file_path = os.path.join(json_dir, filename)
+            with open(file_path, 'r') as file:
+                file_data = json.load(file)
+                file_id = os.path.splitext(filename)[0]
+                combined_data[file_id] = file_data
+
+    combined_json_path = os.path.join(json_dir, 'metadata.json')
+    with open(combined_json_path, 'w') as file:
+        json.dump(combined_data, file, indent=4)
+
+    st.write(f"Combined JSON data saved to {combined_json_path}")
+
 def clean_and_save_csv_files(json_dir, csv_dir):
+    schema_file = 'form_schema.json'
+    with open(schema_file, 'r') as file:
+        schema = json.load(file)
+
+    # Extract all questions from the schema
+    questions = [prop for prop in schema['properties']]
+
+    # Initialize DataFrame with questions
+    df = pd.DataFrame(questions, columns=["Question"])
+
+    # Read each JSON file and append answers to DataFrame
     for filename in os.listdir(json_dir):
         if filename.lower().endswith('.json'):
             file_path = os.path.join(json_dir, filename)
@@ -55,19 +84,36 @@ def clean_and_save_csv_files(json_dir, csv_dir):
                     st.error(f"Unexpected format in file {file_path}, skipping.")
                     continue
 
-                df = pd.json_normalize(data, sep='_')
-                df_transposed = df.T.reset_index()
-                if df_transposed.shape[1] == 2:
-                    df_transposed.columns = ['Question', 'Answer']
-                    cleaned_csv_filename = os.path.splitext(filename)[0] + '_cleaned.csv'
-                    df_transposed.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
-                    st.success(f"Converted and cleaned {file_path} to {os.path.join(csv_dir, cleaned_csv_filename)}")
-                else:
-                    st.error(f"Unexpected format in file {file_path}, skipping.")
+                # Extract answers for each question
+                answers = []
+                for question in questions:
+                    answer = extract_answer(data, question)
+                    answers.append(answer)
+
+                df[os.path.splitext(filename)[0]] = answers
+
             except json.JSONDecodeError as e:
                 st.error(f"Error decoding JSON for {file_path}: {e}")
             except ValueError as e:
                 st.error(f"Error processing file {file_path}: {e}")
+
+    # Save the cleaned DataFrame to a new CSV file
+    cleaned_csv_filename = 'metadata_cleaned.csv'
+    df.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
+    st.success(f"Cleaned CSV data saved to {os.path.join(csv_dir, cleaned_csv_filename)}")
+
+def extract_answer(data, question):
+    keys = question.split('.')
+    answer = data
+    try:
+        for key in keys:
+            if isinstance(answer, dict):
+                answer = answer.get(key, "")
+            else:
+                return ""
+    except Exception as e:
+        return ""
+    return answer
 
 # Streamlit app
 st.title("PDF to CSV Converter")
