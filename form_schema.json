@@ -1,0 +1,183 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Roadshow Feedback Form June 2024",
+    "type": "object",
+    "properties": {
+      "venue_convenience": {
+        "description": "How convenient was it for you to get to this venue?",
+        "type": "integer",
+        "enum": [1, 2, 3, 4, 5]
+      },
+      "other_venues": {
+        "description": "Other venues we should consider",
+        "type": "string"
+      },
+      "knowledge_prior": {
+        "description": "Prior to today’s event how much did you know about Guinness Global Investors?",
+        "type": "integer",
+        "enum": [1, 2, 3, 4, 5]
+      },
+      "knowledge_comment": {
+        "description": "Comment on prior knowledge",
+        "type": "string"
+      },
+      "content_quality": {
+        "description": "Please rate the quality of the content of the presentations",
+        "type": "object",
+        "properties": {
+          "power_dynamics": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "asia_manufacturing_miracle": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "ai_real_returns": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "accessing_venture_capital": { "type": "integer", "enum": [1, 2, 3, 4, 5] }
+        },
+        "required": ["power_dynamics", "asia_manufacturing_miracle", "ai_real_returns", "accessing_venture_capital"]
+      },
+      "content_quality_comment": {
+        "description": "Comment on the quality of content",
+        "type": "string"
+      },
+      "delivery_quality": {
+        "description": "Please rate the quality of the delivery of the presentations",
+        "type": "object",
+        "properties": {
+          "power_dynamics": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "asia_manufacturing_miracle": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "ai_real_returns": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "accessing_venture_capital": { "type": "integer", "enum": [1, 2, 3, 4, 5] }
+        },
+        "required": ["power_dynamics", "asia_manufacturing_miracle", "ai_real_returns", "accessing_venture_capital"]
+      },
+      "delivery_quality_comment": {
+        "description": "Comment on the quality of delivery",
+        "type": "string"
+      },
+      "investment_likelihood": {
+        "description": "Based on what you heard today how likely are you to invest?",
+        "type": "object",
+        "properties": {
+          "energy": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "asia": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "global_innovators": { "type": "integer", "enum": [1, 2, 3, 4, 5] }
+        },
+        "required": ["energy", "asia", "global_innovators"]
+      },
+      "investment_likelihood_comment": {
+        "description": "Comment on likelihood to invest",
+        "type": "string"
+      },
+      "allocation_plans": {
+        "description": "Where are you currently looking to allocate client money to?",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "Global Growth", "Global Income", "Europe", "Sustainable energy",
+            "Conventional energy", "UK", "Asia - China", "Asia – Emerging Markets",
+            "Alternatives", "Sovereign debt", "Corporate debt", "No plans to make changes",
+            "Other"
+          ]
+        }
+      },
+      "other_allocation_plans": {
+        "description": "Other allocation plans",
+        "type": "string"
+      },
+      "national_press": {
+        "description": "Which of the following national press do you read/access? (tick all that apply)",
+        "type": "object",
+        "properties": {
+          "Financial Times": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "The Times": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "The i": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "Sunday Times": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "Guardian": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "Daily Telegraph": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "Daily Mail": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "Mail on Sunday": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "Sunday Telegraph": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "Daily Express": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "Sunday Express": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } },
+          "The Sun": { "type": "array", "items": { "type": "string", "enum": ["In-print", "online"] } }
+        }
+      },
+      "other_national_press": {
+        "description": "Other national press",
+        "type": "string"
+      },
+      "industry_websites": {
+        "description": "Which of the following industry websites do you read/access online? (tick all that apply)",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "Investment Week", "Portfolio Adviser", "FE/Trustnet", "FT Adviser",
+            "Money Marketing", "Professional Adviser", "Morningstar", "Citywire WM",
+            "IFA Magazine", "Citywire NMA", "Professional Paraplanner", "Other"
+          ]
+        }
+      },
+      "other_industry_websites": {
+        "description": "Other industry websites",
+        "type": "string"
+      },
+      "improvement_suggestions": {
+        "description": "What could we improve on for next year?",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "Communication prior to event", "Shorter presentations",
+            "Longer presentations", "Registration process"
+          ]
+        }
+      },
+      "improvement_suggestions_comment": {
+        "description": "Comment on improvements",
+        "type": "string"
+      },
+      "event_rating": {
+        "description": "Overall how would you rate this event?",
+        "type": "integer",
+        "enum": [1, 2, 3, 4, 5]
+      },
+      "event_rating_comment": {
+        "description": "Comment on event rating",
+        "type": "string"
+      },
+      "event_awareness": {
+        "description": "How did you hear about this event?",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["Marketing email", "Social media", "Word of mouth", "Website", "Sales call", "Other"]
+        }
+      },
+      "event_awareness_other": {
+        "description": "Other way of hearing about the event",
+        "type": "string"
+      },
+      "representative_contact": {
+        "description": "Would you like a representative from Guinness Global Investors to contact you?",
+        "type": "string",
+        "enum": ["Yes", "No"]
+      },
+      "representative_contact_comment": {
+        "description": "Comment on representative contact",
+        "type": "string"
+      },
+      "participant_name": {
+        "description": "Your name (to be printed on your CPD certificate)",
+        "type": "string"
+      },
+      "company_name": {
+        "description": "Your company name",
+        "type": "string"
+      },
+      "additional_comments": {
+        "description": "Any other comments",
+        "type": "string"
+      }
+    },
+    "required": ["venue_convenience", "knowledge_prior", "content_quality", "delivery_quality", "investment_likelihood", "allocation_plans", "national_press", "industry_websites", "improvement_suggestions", "event_rating", "event_awareness", "representative_contact"]
+  }
+  
