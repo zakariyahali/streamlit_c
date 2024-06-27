@@ -20,7 +20,6 @@ if not api_key:
 
 client = OpenAI()
 
-
 def convert_pdf_to_images(pdf_path, image_dir):
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
@@ -50,7 +49,14 @@ def clean_and_save_csv_files(json_dir, csv_dir):
         if filename.lower().endswith('.json'):
             file_path = os.path.join(json_dir, filename)
             try:
-                df = pd.read_json(file_path)
+                with open(file_path, 'r') as file:
+                    data = json.load(file)
+                
+                if not isinstance(data, dict):
+                    st.error(f"Unexpected format in file {file_path}, skipping.")
+                    continue
+
+                df = pd.json_normalize(data, sep='_')
                 df_transposed = df.T.reset_index()
                 if df_transposed.shape[1] == 2:
                     df_transposed.columns = ['Question', 'Answer']
@@ -99,3 +105,5 @@ if pdf_file is not None:
             if filename.lower().endswith('.csv'):
                 st.write(f"Generated CSV file: {filename}")
                 st.dataframe(pd.read_csv(os.path.join(csv_dir, filename)))
+
+# Ensure that 'services' module and 'form_schema.json' file are available in the directory
