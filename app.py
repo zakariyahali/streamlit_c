@@ -70,7 +70,7 @@ def clean_and_save_csv_files(json_dir, csv_dir):
     questions = [prop for prop in schema['properties']]
 
     # Initialize DataFrame with questions
-    df = pd.DataFrame(questions, columns=["Question"])
+    df = pd.DataFrame({"Question": questions})
 
     json_files = sorted(os.listdir(json_dir))
     form_data = {}
@@ -101,6 +101,11 @@ def clean_and_save_csv_files(json_dir, csv_dir):
                     st.error(f"Error decoding JSON for {file_path}: {e}")
                 except ValueError as e:
                     st.error(f"Error processing file {file_path}: {e}")
+
+        # Ensure the form_answers list has the same length as questions
+        if len(form_answers) != len(questions):
+            st.error(f"Length of answers ({len(form_answers)}) does not match length of questions ({len(questions)}) for form {form_number}, skipping.")
+            continue
 
         form_data[f"Form_{form_number}"] = form_answers
 
