@@ -3,11 +3,9 @@ import os
 import pandas as pd
 import json
 import base64
-import tempfile
 from pdf2image import convert_from_path
 import openai
 from openai import OpenAI, OpenAIError
-import io
 import fitz
 from services import pdf_to_image, process_images, convert_tocsv
 
@@ -41,7 +39,8 @@ def process_files(image_dir, json_dir, csv_dir):
     combine_json_files(json_dir)
     st.success("JSON data combined.")
 
-    clean_and_save_csv_files(json_dir, csv_dir)
+    clean_and_save_individual_csv_files(json_dir, csv_dir)
+    clean_and_save_combined_csv_files(json_dir, csv_dir)
     st.success("CSV files cleaned and saved.")
 
 def combine_json_files(json_dir):
@@ -61,26 +60,51 @@ def combine_json_files(json_dir):
 
     st.write(f"Combined JSON data saved to {combined_json_path}")
 
-def clean_and_save_csv_files(json_dir, csv_dir):
+def clean_and_save_individual_csv_files(json_dir, csv_dir):
     schema_file = 'form_schema.json'
     with open(schema_file, 'r') as file:
         schema = json.load(file)
 
-    # Extract all questions and descriptions from the schema
     questions = [(prop, details.get("description", prop)) for prop, details in schema['properties'].items()]
 
-    # Split questions into two sets for two pages
-    half_length = len(questions) // 2
-    questions_page1 = questions[:half_length]
-    questions_page2 = questions[half_length:]
+    for filename in os.listdir(json_dir):
+        if filename.lower().endswith('.json'):
+            file_path = os.path.join(json_dir, filename)
+            try:
+                with open(file_path, 'r') as file:
+                    data = json.load(file)
+                
+                if not isinstance(data, dict):
+                    st.error(f"Unexpected format in file {file_path}, skipping.")
+                    continue
 
-    # Initialize DataFrame with questions and descriptions
-    df = pd.DataFrame(questions, columns=["Key", "Question"])
+                # Create a DataFrame for each JSON file
+                answers = []
+                for question_key, question_desc in questions:
+                    answer = extract_answer(data, question_key)
+                    answers.append((question_desc, answer))
+
+                df = pd.DataFrame(answers, columns=["Question", "Answer"])
+                csv_filename = os.path.join(csv_dir, f"{os.path.splitext(filename)[0]}.csv")
+                df.to_csv(csv_filename, index=False)
+                st.write(f"Generated CSV file: {csv_filename}")
+                st.dataframe(df)
+
+            except json.JSONDecodeError as e:
+                st.error(f"Error decoding JSON for {file_path}: {e}")
+            except ValueError as e:
+                st.error(f"Error processing file {file_path}: {e}")
+
+def clean_and_save_combined_csv_files(json_dir, csv_dir):
+    schema_file = 'form_schema.json'
+    with open(schema_file, 'r') as file:
+        schema = json.load(file)
+
+    questions = [(prop, details.get("description", prop)) for prop, details in schema['properties'].items()]
 
     json_files = sorted(os.listdir(json_dir))
     form_data = {}
 
-    # Read each JSON file and combine pages to form complete forms
     for idx in range(0, len(json_files), 2):
         form_number = idx // 2 + 1
         form_answers = []
@@ -88,12 +112,12 @@ def clean_and_save_csv_files(json_dir, csv_dir):
         # Extract answers from the first page
         if idx < len(json_files):
             file_path = os.path.join(json_dir, json_files[idx])
-            form_answers += extract_answers_from_page(file_path, questions_page1)
+            form_answers += extract_answers_from_page(file_path, questions[:len(questions)//2])
 
         # Extract answers from the second page
         if idx + 1 < len(json_files):
             file_path = os.path.join(json_dir, json_files[idx + 1])
-            form_answers += extract_answers_from_page(file_path, questions_page2)
+            form_answers += extract_answers_from_page(file_path, questions[len(questions)//2:])
 
         # Ensure the form_answers list has the same length as questions
         if len(form_answers) != len(questions):
@@ -107,9 +131,9 @@ def clean_and_save_csv_files(json_dir, csv_dir):
     form_df.columns = ["Question"] + list(form_df.columns[1:])
 
     # Save the cleaned DataFrame to a new CSV file
-    cleaned_csv_filename = 'metadata_cleaned.csv'
+    cleaned_csv_filename = 'metadata_combined.csv'
     form_df.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
-    st.success(f"Cleaned CSV data saved to {os.path.join(csv_dir, cleaned_csv_filename)}")
+    st.success(f"Combined metadata CSV data saved to {os.path.join(csv_dir, cleaned_csv_filename)}")
 
 def extract_answers_from_page(file_path, questions):
     answers = []
@@ -121,7 +145,6 @@ def extract_answers_from_page(file_path, questions):
             st.error(f"Unexpected format in file {file_path}, skipping.")
             return answers
 
-        # Extract answers for each question
         for question_key, _ in questions:
             answer = extract_answer(data, question_key)
             answers.append(answer)
@@ -179,12 +202,18 @@ if pdf_file is not None:
 
         st.success("All processing complete!")
 
-        cleaned_csv_path = os.path.join(csv_dir, 'metadata_cleaned.csv')
-        if os.path.exists(cleaned_csv_path):
-            st.write("Cleaned Metadata CSV")
-            st.dataframe(pd.read_csv(cleaned_csv_path))
+        combined_csv_path = os.path.join(csv_dir, 'metadata_combined.csv')
+        individual_csv_path = os.path.join(csv_dir, 'metadata_cleaned.csv')
+
+        st.write("Combined Metadata CSV")
+        if os.path.exists(combined_csv_path):
+            st.dataframe(pd.read_csv(combined_csv_path))
+
+        st.write("Individual JSONs Metadata CSV")
+        if os.path.exists(individual_csv_path):
+            st.dataframe(pd.read_csv(individual_csv_path))
 
         for filename in os.listdir(csv_dir):
-            if filename.lower().endswith('.csv') and filename != 'metadata_cleaned.csv':
+            if filename.lower().endswith('.csv') and filename not in ['metadata_cleaned.csv', 'metadata_combined.csv']:
                 st.write(f"Generated CSV file: {filename}")
                 st.dataframe(pd.read_csv(os.path.join(csv_dir, filename)))
