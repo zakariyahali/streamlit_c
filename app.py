@@ -17,6 +17,7 @@ if not api_key:
     st.stop()
 
 client = OpenAI()
+
 def convert_pdf_to_images(pdf_path, image_dir):
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
@@ -202,17 +203,17 @@ if pdf_file is not None:
         st.success("All processing complete!")
 
         combined_csv_path = os.path.join(csv_dir, 'metadata_combined.csv')
-        individual_csv_path = os.path.join(csv_dir, 'metadata_cleaned.csv')
 
         st.write("Combined Metadata CSV")
         if os.path.exists(combined_csv_path):
             st.dataframe(pd.read_csv(combined_csv_path))
 
-        st.write("Individual JSONs Metadata CSV")
-        if os.path.exists(individual_csv_path):
-            st.dataframe(pd.read_csv(individual_csv_path))
-
         for filename in os.listdir(csv_dir):
-            if filename.lower().endswith('.csv') and filename not in ['metadata_cleaned.csv', 'metadata_combined.csv']:
-                st.write(f"Generated CSV file: {filename}")
+            if filename.lower().endswith('.csv') and filename != 'metadata_combined.csv':
+                page_number = filename.split('_')[0].replace('page', 'Page ')
+                st.write(f"Generated CSV file for {page_number}: {filename}")
                 st.dataframe(pd.read_csv(os.path.join(csv_dir, filename)))
+
+        # Explain other files created
+        st.write("### Other Files Created")
+        st.write(f"All JSON files and their corresponding CSV files are saved in the `generated_files` directory inside `{base_dir}`.")
