@@ -17,7 +17,6 @@ if not api_key:
     st.stop()
 
 client = OpenAI()
-
 def convert_pdf_to_images(pdf_path, image_dir):
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
@@ -32,13 +31,33 @@ def convert_pdf_to_images(pdf_path, image_dir):
     st.success("PDF converted to images.")
 
 def process_files(image_dir, json_dir, csv_dir):
-    schema_file = 'form_schema.json'
+    schema_file = 'form_schema.json'  # Ensure form_schema.json is available in the directory
     process_images.process_images_in_directory(image_dir, schema_file, json_dir)
     st.success("Images processed to JSON.")
 
+    combine_json_files(json_dir)
+    st.success("JSON data combined.")
+
     clean_and_save_individual_csv_files(json_dir, csv_dir)
-    clean_and_save_merged_csv_files(json_dir, csv_dir)
+    clean_and_save_combined_csv_files(json_dir, csv_dir)
     st.success("CSV files cleaned and saved.")
+
+def combine_json_files(json_dir):
+    combined_data = {}
+
+    for filename in os.listdir(json_dir):
+        if filename.lower().endswith('.json'):
+            file_path = os.path.join(json_dir, filename)
+            with open(file_path, 'r') as file:
+                file_data = json.load(file)
+                file_id = os.path.splitext(filename)[0]
+                combined_data[file_id] = file_data
+
+    combined_json_path = os.path.join(json_dir, 'metadata.json')
+    with open(combined_json_path, 'w') as file:
+        json.dump(combined_data, file, indent=4)
+
+    st.write(f"Combined JSON data saved to {combined_json_path}")
 
 def clean_and_save_individual_csv_files(json_dir, csv_dir):
     schema_file = 'form_schema.json'
@@ -58,22 +77,24 @@ def clean_and_save_individual_csv_files(json_dir, csv_dir):
                     st.error(f"Unexpected format in file {file_path}, skipping.")
                     continue
 
+                # Create a DataFrame for each JSON file
                 answers = []
                 for question_key, question_desc in questions:
                     answer = extract_answer(data, question_key)
                     answers.append((question_desc, answer))
 
                 df = pd.DataFrame(answers, columns=["Question", "Answer"])
-                csv_filename = os.path.join(csv_dir, f"{os.path.splitext(filename)[0]}_cleaned.csv")
+                csv_filename = os.path.join(csv_dir, f"{os.path.splitext(filename)[0]}.csv")
                 df.to_csv(csv_filename, index=False)
                 st.write(f"Generated CSV file: {csv_filename}")
+                st.dataframe(df)
 
             except json.JSONDecodeError as e:
                 st.error(f"Error decoding JSON for {file_path}: {e}")
             except ValueError as e:
                 st.error(f"Error processing file {file_path}: {e}")
 
-def clean_and_save_merged_csv_files(json_dir, csv_dir):
+def clean_and_save_combined_csv_files(json_dir, csv_dir):
     schema_file = 'form_schema.json'
     with open(schema_file, 'r') as file:
         schema = json.load(file)
@@ -81,33 +102,37 @@ def clean_and_save_merged_csv_files(json_dir, csv_dir):
     questions = [(prop, details.get("description", prop)) for prop, details in schema['properties'].items()]
 
     json_files = sorted(os.listdir(json_dir))
-    form_data = []
+    form_data = {}
 
     for idx in range(0, len(json_files), 2):
+        form_number = idx // 2 + 1
         form_answers = []
 
+        # Extract answers from the first page
         if idx < len(json_files):
             file_path = os.path.join(json_dir, json_files[idx])
             form_answers += extract_answers_from_page(file_path, questions[:len(questions)//2])
 
+        # Extract answers from the second page
         if idx + 1 < len(json_files):
             file_path = os.path.join(json_dir, json_files[idx + 1])
             form_answers += extract_answers_from_page(file_path, questions[len(questions)//2:])
 
+        # Ensure the form_answers list has the same length as questions
         if len(form_answers) != len(questions):
-            st.error(f"Length of answers ({len(form_answers)}) does not match length of questions ({len(questions)}) for form {idx // 2 + 1}, skipping.")
+            st.error(f"Length of answers ({len(form_answers)}) does not match length of questions ({len(questions)}) for form {form_number}, skipping.")
             continue
 
-        form_data.append(form_answers)
+        form_data[f"Form_{form_number}"] = form_answers
 
-    if form_data:
-        form_df = pd.DataFrame(form_data, columns=[q[1] for q in questions]).T
-        form_df.columns = [f"Form_{i+1}" for i in range(len(form_data))]
+    # Create a DataFrame from form_data
+    form_df = pd.DataFrame(form_data, index=[q[1] for q in questions]).reset_index()
+    form_df.columns = ["Question"] + list(form_df.columns[1:])
 
-        for idx in range(len(form_data)):
-            merged_csv_filename = f'form_{idx+1}_merged.csv'
-            form_df[[f"Form_{idx+1}"]].to_csv(os.path.join(csv_dir, merged_csv_filename), index_label="Question")
-            st.write(f"Generated Merged CSV file: {merged_csv_filename}")
+    # Save the cleaned DataFrame to a new CSV file
+    cleaned_csv_filename = 'metadata_combined.csv'
+    form_df.to_csv(os.path.join(csv_dir, cleaned_csv_filename), index=False)
+    st.success(f"Combined metadata CSV data saved to {os.path.join(csv_dir, cleaned_csv_filename)}")
 
 def extract_answers_from_page(file_path, questions):
     answers = []
@@ -176,28 +201,18 @@ if pdf_file is not None:
 
         st.success("All processing complete!")
 
-        # Summary of the process
-        num_images = len(os.listdir(image_dir))
-        num_csv_files = len([name for name in os.listdir(csv_dir) if name.lower().endswith('.csv')])
-        st.write(f"Process Summary: {num_images} images processed, {num_csv_files} CSV files generated.")
+        combined_csv_path = os.path.join(csv_dir, 'metadata_combined.csv')
+        individual_csv_path = os.path.join(csv_dir, 'metadata_cleaned.csv')
 
-        # Display individual cleaned CSV files
-        st.write("### Individual Cleaned CSV Files")
-        for filename in sorted(os.listdir(csv_dir)):
-            if filename.lower().endswith('_cleaned.csv') and 'metadata' not in filename:
-                page_number = filename.split('_')[0].replace('page', 'Page ')
-                st.write(f"**{page_number}**")
+        st.write("Combined Metadata CSV")
+        if os.path.exists(combined_csv_path):
+            st.dataframe(pd.read_csv(combined_csv_path))
+
+        st.write("Individual JSONs Metadata CSV")
+        if os.path.exists(individual_csv_path):
+            st.dataframe(pd.read_csv(individual_csv_path))
+
+        for filename in os.listdir(csv_dir):
+            if filename.lower().endswith('.csv') and filename not in ['metadata_cleaned.csv', 'metadata_combined.csv']:
+                st.write(f"Generated CSV file: {filename}")
                 st.dataframe(pd.read_csv(os.path.join(csv_dir, filename)))
-
-        # Display merged CSV files
-        st.write("### Merged CSV Files")
-        for idx in range(1, (num_images // 2) + 1):
-            merged_csv_filename = f'form_{idx}_merged.csv'
-            if os.path.exists(os.path.join(csv_dir, merged_csv_filename)):
-                st.write(f"#### Form {idx}")
-                st.dataframe(pd.read_csv(os.path.join(csv_dir, merged_csv_filename)))
-                st.write(f"Merged CSV for Form {idx} is created by combining Page {2 * idx - 1} and Page {2 * idx}.")
-
-        # Explain other files created
-        st.write("### Other Files Created")
-        st.write(f"All JSON files and their corresponding CSV files are saved in the `generated_files` directory inside `{base_dir}`.")
