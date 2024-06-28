@@ -28,7 +28,7 @@ def process_image(image_path: str, form_schema: dict, output_dir: str):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "provide JSON file that represents this document. Use this JSON Schema: " +
+                        {"type": "text", "text": "Provide JSON file that represents this document. Handle Use this JSON Schema: " +
                             json.dumps(form_schema)},
                         {
                             "type": "image_url",
