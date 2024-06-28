@@ -7,11 +7,12 @@ from services import pdf_to_image, process_images
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 api_key = openai.api_key
+OpenAI.api_key = api_key
 if not api_key:
     st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
     st.stop()
 
-client = openai.OpenAI(api_key)
+client = OpenAI()
 
 def convert_pdf_to_images(pdf_path, image_dir):
     if not os.path.exists(image_dir):
