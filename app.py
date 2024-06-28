@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import fitz
 from services import pdf_to_image, process_images
+import openai
 
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 api_key = openai.api_key
