@@ -100,14 +100,14 @@ def clean_and_save_merged_csv_files(json_dir, csv_dir):
 
         form_data.append(form_answers)
 
-    form_df = pd.DataFrame(form_data, columns=[q[1] for q in questions]).T
-    form_df.columns = [f"Form_{i+1}" for i in range(len(form_data))]
+    if form_data:
+        form_df = pd.DataFrame(form_data, columns=[q[1] for q in questions]).T
+        form_df.columns = [f"Form_{i+1}" for i in range(len(form_data))]
 
-    for idx in range(0, len(json_files), 2):
-        form_num = idx // 2 + 1
-        merged_csv_filename = f'form_{form_num}_merged.csv'
-        form_df[[f"Form_{form_num}"]].to_csv(os.path.join(csv_dir, merged_csv_filename), index_label="Question")
-        st.write(f"Generated Merged CSV file: {merged_csv_filename}")
+        for idx in range(len(form_data)):
+            merged_csv_filename = f'form_{idx+1}_merged.csv'
+            form_df[[f"Form_{idx+1}"]].to_csv(os.path.join(csv_dir, merged_csv_filename), index_label="Question")
+            st.write(f"Generated Merged CSV file: {merged_csv_filename}")
 
 def extract_answers_from_page(file_path, questions):
     answers = []
@@ -201,4 +201,3 @@ if pdf_file is not None:
         # Explain other files created
         st.write("### Other Files Created")
         st.write(f"All JSON files and their corresponding CSV files are saved in the `generated_files` directory inside `{base_dir}`.")
-        st.write("You can download these files from their directories for further use.")
