@@ -209,7 +209,7 @@ if pdf_file is not None:
                 st.dataframe(pd.read_csv(os.path.join(csv_dir, filename)))
 
         # Display metadata CSV files
-        st.write("### Metadata CSV Files")
+        st.write("### Metadata CSV Files - Combined and Individual -> This feature is still in development. Please check back later.")
         combined_csv_path = os.path.join(csv_dir, 'metadata_combined.csv')
         individual_csv_path = os.path.join(csv_dir, 'metadata_cleaned.csv')
 
@@ -217,9 +217,9 @@ if pdf_file is not None:
         if os.path.exists(combined_csv_path):
             st.dataframe(pd.read_csv(combined_csv_path))
 
-        st.write("#### Individual JSONs Metadata CSV")
-        if os.path.exists(individual_csv_path):
-            st.dataframe(pd.read_csv(individual_csv_path))
+        # st.write("#### Individual JSONs Metadata CSV")
+        # if os.path.exists(individual_csv_path):
+        #     st.dataframe(pd.read_csv(individual_csv_path))
 
         # Explain other files created
         st.write("### Other Files Created")
